@@ -1,0 +1,47 @@
+{
+  "name": "trackpod-mcp",
+  "version": "1.0.0",
+  "description": "Track-POD API integration for Model Context Protocol",
+  "author": "Kenneth-17",
+  "license": "MIT",
+  "runtime": "node",
+  "main": "dist/index.js",
+  "commands": {
+    "start": ["npm", "run", "start"],
+    "dev": ["npm", "run", "dev"]
+  },
+  "config": {
+    "apiKey": {
+      "type": "string",
+      "required": true,
+      "env": "TRACKPOD_API_KEY",
+      "description": "Your Track-POD API key"
+    },
+    "baseUrl": {
+      "type": "string",
+      "default": "https://api.track-pod.com",
+      "env": "TRACKPOD_BASE_URL",
+      "description": "Track-POD API base URL"
+    },
+    "timeout": {
+      "type": "number",
+      "default": 10000,
+      "env": "TRACKPOD_TIMEOUT",
+      "description": "Request timeout in milliseconds"
+    },
+    "rateLimits": {
+      "perSecond": {
+        "type": "number",
+        "default": 20,
+        "env": "TRACKPOD_RATE_LIMIT_PER_SECOND",
+        "description": "Maximum requests per second"
+      },
+      "perMinute": {
+        "type": "number",
+        "default": 400,
+        "env": "TRACKPOD_RATE_LIMIT_PER_MINUTE",
+        "description": "Maximum requests per minute"
+      }
+    }
+  }
+}
