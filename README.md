@@ -26,27 +26,65 @@ export TRACKPOD_API_KEY=your_api_key_here
 
 ## Usage
 
-The server exposes Track-POD functionality through namespaced methods:
+The server exposes Track-POD functionality through MCP tools. Here are some examples:
 
-### Orders
-- `orders.create` - Create new orders
-- `orders.update` - Update existing orders
-- `orders.bulkCreate` - Create up to 500 orders at once
-- `orders.getByNumber` - Retrieve orders by number
-- `orders.complete` - Mark orders as delivered
-- `orders.reject` - Mark orders as failed
+### Creating an Order
+```json
+{
+  "tool": "orders_create",
+  "arguments": {
+    "number": "ORD-2024-001",
+    "consignee": {
+      "name": "John Doe",
+      "phone": "+1234567890",
+      "email": "john@example.com"
+    },
+    "address": {
+      "street": "123 Main St",
+      "city": "New York", 
+      "postalCode": "10001",
+      "country": "US"
+    },
+    "items": [
+      {
+        "name": "Product A",
+        "quantity": 2,
+        "weight": 5.5
+      }
+    ]
+  }
+}
+```
 
-### Routes
-- `routes.create` - Create delivery routes
-- `routes.addOrder` - Assign orders to routes
-- `routes.start` - Start route execution
-- `routes.close` - Complete routes
-- `routes.getTrack` - Get GPS tracking data
+### Starting a Route
+```json
+{
+  "tool": "routes_start_by_code",
+  "arguments": {
+    "code": "ROUTE-2024-01-15-001"
+  }
+}
+```
 
-### Drivers
-- `drivers.create` - Add new drivers
-- `drivers.list` - List all drivers
-- `drivers.update` - Update driver information
+### Available Tools
+
+**Order Management (18 tools):**
+- `orders_create`, `orders_update`, `orders_bulk_create`
+- `orders_get_by_number`, `orders_complete_by_number`, `orders_reject_by_number`
+- `orders_list_by_date` and more...
+
+**Route Management (20+ tools):**
+- `routes_create`, `routes_get_by_code`, `routes_start_by_code`
+- `routes_close_by_code`, `routes_add_order_by_code`, `routes_get_track_by_code`
+- And many more route operations...
+
+**Driver & Vehicle Management:**
+- `drivers_create`, `drivers_list`, `drivers_get_by_username`
+- `vehicles_create`, `vehicles_list`
+
+**Utilities:**
+- `test_ping` - Test API connectivity
+- `reject_reasons_list` - Get valid rejection reasons
 
 ## Development
 
