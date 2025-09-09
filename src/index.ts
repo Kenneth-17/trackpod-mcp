@@ -5,18 +5,13 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-// import { z } from 'zod';
-// import { config } from './config.js';
 import { RateLimitedClient } from './client/rate-limiter.js';
-
-// Import resource handlers (to be implemented)
-// import { registerOrderTools } from './resources/order.js';
-// import { registerRouteTools } from './resources/route.js';
-// import { registerDriverTools } from './resources/driver.js';
+import { ToolRegistry } from './utils/tool-registry.js';
 
 class TrackPodMCPServer {
   private server: Server;
   private client: RateLimitedClient;
+  private toolRegistry: ToolRegistry;
 
   constructor() {
     this.server = new Server(
@@ -32,6 +27,7 @@ class TrackPodMCPServer {
     );
 
     this.client = new RateLimitedClient();
+    this.toolRegistry = new ToolRegistry(this.client);
     this.setupHandlers();
   }
 
@@ -39,60 +35,49 @@ class TrackPodMCPServer {
     // Handle tool listing
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
-        tools: [
-          // Test endpoint
-          {
-            name: 'test_ping',
-            description: 'Verify API key and check rate limits',
-            inputSchema: {
-              type: 'object',
-              properties: {},
-              required: [],
-            },
-          },
-          // Order tools will be added here
-          // Route tools will be added here  
-          // Driver tools will be added here
-        ],
+        tools: this.toolRegistry.getTools(),
       };
     });
 
     // Handle tool execution
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      const { name } = request.params;
+      const { name, arguments: args } = request.params;
 
       try {
-        // Test endpoint
-        if (name === 'test_ping') {
-          const result = await this.client.get('/Test');
-          const rateLimitStatus = await this.client.getCurrentStatus();
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify({
-                  success: true,
-                  message: 'API connection successful',
-                  data: result,
-                  rateLimitStatus,
-                }),
-              },
-            ],
-          };
-        }
-
-        // Additional tool handlers will be added here
-
-        throw new Error(`Unknown tool: ${name}`);
+        const result = await this.toolRegistry.callTool(name, args);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                data: result,
+                metadata: {
+                  timestamp: new Date().toISOString(),
+                  tool: name,
+                },
+              }),
+            },
+          ],
+        };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        console.error(`Tool execution error [${name}]:`, error);
+        
         return {
           content: [
             {
               type: 'text',
               text: JSON.stringify({
                 success: false,
-                error: errorMessage,
+                error: {
+                  code: error instanceof Error && 'code' in error ? (error as any).code : 'TOOL_EXECUTION_ERROR',
+                  message: errorMessage,
+                  tool: name,
+                },
+                metadata: {
+                  timestamp: new Date().toISOString(),
+                },
               }),
             },
           ],

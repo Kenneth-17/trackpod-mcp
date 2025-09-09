@@ -11,11 +11,6 @@ import {
   OrderNumberQuerySchema,
   OrderIdQuerySchema,
   TrackIdQuerySchema,
-  type CreateOrder,
-  type UpdateOrder,
-  type BulkCreateOrder,
-  type CompleteOrder,
-  type RejectOrder,
 } from '../schemas/order.js';
 
 export class OrderResource {
