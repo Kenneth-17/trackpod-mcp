@@ -40,3 +40,10 @@ pids
 # Temporary files
 tmp/
 temp/
+
+# Internal project files
+trackpod-mcp-prd.md
+projectplan.md
+rules/
+*.prd.md
+*.plan.md
