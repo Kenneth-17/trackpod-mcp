@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosError, AxiosRequestConfig } from 'axios';
 import { config } from '../config.js';
+import { logger } from '../utils/logger.js';
 
 export interface TrackPodError {
   code: string;
@@ -34,7 +35,7 @@ export class TrackPodClient {
         request.headers['X-Correlation-ID'] = correlationId;
         
         // Log request (without sensitive data)
-        console.debug(`[${correlationId}] ${request.method?.toUpperCase()} ${request.url}`);
+        logger.debug(`[${correlationId}] ${request.method?.toUpperCase()} ${request.url}`);
         
         return request;
       },
@@ -47,7 +48,7 @@ export class TrackPodClient {
     this.client.interceptors.response.use(
       (response) => {
         const correlationId = response.config.headers?.['X-Correlation-ID'];
-        console.debug(`[${correlationId}] Response: ${response.status}`);
+        logger.debug(`[${correlationId}] Response: ${response.status}`);
         return response;
       },
       async (error: AxiosError) => {
@@ -59,7 +60,7 @@ export class TrackPodClient {
           
           if (originalRequest._retry <= 3) {
             const delay = Math.pow(2, originalRequest._retry) * 1000; // Exponential backoff
-            console.debug(`Retrying request after ${delay}ms (attempt ${originalRequest._retry}/3)`);
+            logger.debug(`Retrying request after ${delay}ms (attempt ${originalRequest._retry}/3)`);
             
             await new Promise(resolve => setTimeout(resolve, delay));
             return this.client.request(originalRequest);
@@ -115,7 +116,7 @@ export class TrackPodClient {
           }
       }
       
-      console.error(`[${correlationId}] Error ${statusCode}: ${message}`);
+      logger.error(`[${correlationId}] Error ${statusCode}: ${message}`);
       
       return {
         code,
@@ -125,7 +126,7 @@ export class TrackPodClient {
       };
     } else if (error.request) {
       // Request made but no response received
-      console.error(`[${correlationId}] No response received`);
+      logger.error(`[${correlationId}] No response received`);
       return {
         code: 'NETWORK_ERROR',
         message: 'No response from Track-POD service',
@@ -133,7 +134,7 @@ export class TrackPodClient {
       };
     } else {
       // Error setting up the request
-      console.error(`[${correlationId}] Request setup error: ${error.message}`);
+      logger.error(`[${correlationId}] Request setup error: ${error.message}`);
       return {
         code: 'REQUEST_SETUP_ERROR',
         message: error.message || 'Failed to setup request',

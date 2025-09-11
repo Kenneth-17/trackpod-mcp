@@ -1,6 +1,7 @@
 import Bottleneck from 'bottleneck';
 import { config } from '../config.js';
 import { TrackPodClient, TrackPodError } from './base.js';
+import { logger } from '../utils/logger.js';
 
 export class RateLimitedClient extends TrackPodClient {
   private limiter: Bottleneck;
@@ -22,17 +23,17 @@ export class RateLimitedClient extends TrackPodClient {
 
     // Handle rate limit errors
     this.limiter.on('error', (error) => {
-      console.error('Rate limiter error:', error);
+      logger.error('Rate limiter error:', error);
     });
 
     // Log when we're approaching limits
     this.limiter.on('depleted', () => {
-      console.warn('Rate limiter: Approaching rate limits, queuing requests');
+      logger.warn('Rate limiter: Approaching rate limits, queuing requests');
     });
 
     // Log when rate limit is restored
     this.limiter.on('idle', () => {
-      console.debug('Rate limiter: All queued requests completed');
+      logger.debug('Rate limiter: All queued requests completed');
     });
   }
 
@@ -70,7 +71,7 @@ export class RateLimitedClient extends TrackPodClient {
   async handleRateLimitError(error: TrackPodError, retryAfter?: number): Promise<void> {
     if (error.code === 'RATE_LIMIT_ERROR') {
       const delay = retryAfter ? retryAfter * 1000 : 60000; // Default to 1 minute if no retry-after header
-      console.warn(`Rate limit hit. Backing off for ${delay}ms`);
+      logger.warn(`Rate limit hit. Backing off for ${delay}ms`);
       
       // Pause the limiter
       await this.limiter.stop();

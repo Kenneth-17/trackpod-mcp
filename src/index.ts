@@ -7,6 +7,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { RateLimitedClient } from './client/rate-limiter.js';
 import { ToolRegistry } from './utils/tool-registry.js';
+import { logger } from './utils/logger.js';
 
 class TrackPodMCPServer {
   private server: Server;
@@ -14,6 +15,12 @@ class TrackPodMCPServer {
   private toolRegistry: ToolRegistry;
 
   constructor() {
+    logger.info('Initializing Track-POD MCP Server...');
+    logger.debug('Environment variables loaded:', { 
+      hasApiKey: !!process.env.TRACKPOD_API_KEY,
+      apiKeyLength: process.env.TRACKPOD_API_KEY?.length || 0
+    });
+    
     this.server = new Server(
       {
         name: 'trackpod-mcp',
@@ -29,6 +36,7 @@ class TrackPodMCPServer {
     this.client = new RateLimitedClient();
     this.toolRegistry = new ToolRegistry(this.client);
     this.setupHandlers();
+    logger.info('Track-POD MCP Server initialized successfully');
   }
 
   private setupHandlers(): void {
@@ -62,7 +70,10 @@ class TrackPodMCPServer {
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        console.error(`Tool execution error [${name}]:`, error);
+        logger.error(`Tool execution error [${name}]:`, error);
+        
+        // Handle TrackPodError objects (from our HTTP client)
+        const isTrackPodError = error && typeof error === 'object' && 'code' in error && 'message' in error;
         
         return {
           content: [
@@ -71,9 +82,11 @@ class TrackPodMCPServer {
               text: JSON.stringify({
                 success: false,
                 error: {
-                  code: error instanceof Error && 'code' in error ? (error as any).code : 'TOOL_EXECUTION_ERROR',
-                  message: errorMessage,
+                  code: isTrackPodError ? (error as any).code : (error instanceof Error && 'code' in error ? (error as any).code : 'TOOL_EXECUTION_ERROR'),
+                  message: isTrackPodError ? (error as any).message : errorMessage,
                   tool: name,
+                  statusCode: isTrackPodError ? (error as any).statusCode : undefined,
+                  details: isTrackPodError ? (error as any).details : (error instanceof Error ? error.stack : String(error)),
                 },
                 metadata: {
                   timestamp: new Date().toISOString(),
@@ -88,7 +101,7 @@ class TrackPodMCPServer {
 
     // Log server errors
     this.server.onerror = (error) => {
-      console.error('[MCP Server Error]', error);
+      logger.error('[MCP Server Error]', error);
     };
   }
 
@@ -96,13 +109,13 @@ class TrackPodMCPServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     
-    console.error('Track-POD MCP server started');
+    logger.info('Track-POD MCP server started');
   }
 }
 
 // Start the server
 const server = new TrackPodMCPServer();
 server.start().catch((error) => {
-  console.error('Failed to start server:', error);
+  logger.error('Failed to start server:', error);
   process.exit(1);
 });
