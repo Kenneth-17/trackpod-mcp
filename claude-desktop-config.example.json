@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "trackpod": {
+      "command": "node",
+      "args": ["/absolute/path/to/trackpod-mcp/dist/index.js"],
+      "env": {
+        "TRACKPOD_API_KEY": "your_trackpod_api_key_here"
+      }
+    }
+  }
+}
